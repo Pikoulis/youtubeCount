@@ -7,9 +7,10 @@
 <meta name="description" content="HelmetCamHeroes subscriber dashboard and scheduled night clock.">
 <title>HelmetCamHeroes · Channel display</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23090b0e'/%3E%3Cpath d='M26 18L46 32L26 46Z' fill='%23ff533d'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=adaptive-night-3">
 <script src="config.js" defer></script>
-<script src="app.js" defer></script>
+<script src="app.js?v=adaptive-night-3" defer></script>
+<script src="sensor.js?v=adaptive-night-3" defer></script>
 </head>
 <body>
 <div class="shell" id="dashboard">
@@ -38,6 +39,10 @@
 <p class="field-note">Saved only in this browser. Use a website-restricted YouTube Data API v3 key. See README for setup.</p>
 <div class="form-row"><label>Night starts<input type="time" name="nightStart" required></label><label>Day starts<input type="time" name="nightEnd" required></label></div>
 <label class="check"><input type="checkbox" name="nightEnabled"> Switch to the clock on schedule</label>
+<label>Night clock colour<select name="nightColor"><option value="amber">Amber</option><option value="red">Red</option></select></label>
+<label class="check"><input type="checkbox" name="autoDim"> Auto-dim night clock using room light</label>
+<button id="checkSensor" type="button" style="margin-top:18px">Check light sensor</button>
+<p id="sensorStatus" class="field-note" role="status">During scheduled nights, darker rooms get dimmer numbers. If the sensor is unavailable, the clock keeps its chosen clock colour.</p>
 <label class="check"><input type="checkbox" name="hour24"> Use a 24-hour clock</label>
 <label class="check"><input type="checkbox" name="showComments"> Show today’s comments</label>
 <label class="check"><input type="checkbox" name="keepAwake"> Keep the display awake when supported</label>
