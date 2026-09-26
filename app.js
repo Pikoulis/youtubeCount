@@ -2,13 +2,14 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const SETTINGS_KEY = 'hch.settings.v1';
-  const defaults = {channelName:'HelmetCamHeroes',channel:'@HelmetCamHeroes',apiKey:'',refreshMinutes:15,nightEnabled:true,nightStart:'22:00',nightEnd:'07:00',hour24:true,showComments:true,keepAwake:true,demo:false};
+  const defaults = {channelName:'HelmetCamHeroes',channel:'@HelmetCamHeroes',apiKey:'',refreshMinutes:15,nightEnabled:true,autoDim:true,nightColor:'amber',nightStart:'22:00',nightEnd:'07:00',hour24:true,showComments:true,keepAwake:true,demo:false};
   const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
   const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
   const validTime = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
   function normalize(value) {
     const c = {...defaults,...value};
     c.channel = String(c.channel || defaults.channel).trim();
+    c.nightColor = c.nightColor==='red'?'red':'amber';
     c.apiKey = String(c.apiKey || '').trim();
     c.refreshMinutes = Math.min(1440,Math.max(5,Number(c.refreshMinutes) || 15));
     if (!validTime(c.nightStart)) c.nightStart = defaults.nightStart;
@@ -34,12 +35,18 @@
   }
   function tick() {
     const date = new Date();
+    $('night').classList.toggle('red-clock',config.nightColor==='red');
     if (observedDay!==dayStart()) { observedDay=dayStart(); comments=null; commentsMessage=''; renderComments(); refresh(); }
     const options = {hour:'2-digit',minute:'2-digit',hour12:!config.hour24};
     const time = date.toLocaleTimeString([],options);
     $('dayTime').textContent=time;
     $('nightTime').textContent=time;
     $('nightDate').textContent=date.toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'});
+    const sensorEnabled = config.autoDim && mode==='auto' && scheduledNight(date);
+    if (window.NIGHT_LIGHT_ENABLED !== sensorEnabled) {
+      window.NIGHT_LIGHT_ENABLED = sensorEnabled;
+      window.dispatchEvent(new Event('nightlightchange'));
+    }
     const night = mode==='night' || (mode==='auto' && scheduledNight(date));
     if (night!==currentNight) { currentNight=night; $('dashboard').hidden=night; $('night').hidden=!night; document.body.classList.toggle('is-night',night); }
     // A subtle periodic position shift reduces static pixels; it cannot prevent burn-in.
@@ -197,7 +204,7 @@
   document.addEventListener('keydown',e=>{
     if($('settingsPanel').hidden)return;
     if(e.key==='Escape')closeSettings();
-    if(e.key==='Tab') {const items=[...$('settingsPanel').querySelectorAll('button,input')];const first=items[0],end=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();end.focus();}else if(!e.shiftKey&&document.activeElement===end){e.preventDefault();first.focus();}}
+    if(e.key==='Tab') {const items=[...$('settingsPanel').querySelectorAll('button,input,select')];const first=items[0],end=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();end.focus();}else if(!e.shiftKey&&document.activeElement===end){e.preventDefault();first.focus();}}
   });
   $('settingsForm').addEventListener('submit',e=>{
     e.preventDefault();const form=e.currentTarget, values={};
