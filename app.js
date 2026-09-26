@@ -16,10 +16,11 @@
     return c;
   }
   let config = normalize({...window.DASHBOARD_CONFIG,...read(SETTINGS_KEY,{})});
-  let mode = 'auto', timer, controller, generation = 0, last = null, comments = null, wake = null, waking = false, awakeRequested = false;
+  let mode = 'auto', timer, controller, generation = 0, last = null, comments = null, latestVideo = null, videoMessage = '', wake = null, waking = false, awakeRequested = false;
   let currentNight = false, controlsTimer;
   const number = value => Number(value).toLocaleString();
   const cacheKey = () => 'hch.data.v1.' + config.channel;
+  const videoKey = () => 'hch.video.v1.' + config.channel;
   const commentsKey = () => 'hch.comments.v1.' + config.channel;
   const dayStart = () => { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
   let observedDay = dayStart();
@@ -50,10 +51,33 @@
     renderComments();
     $('count').textContent=last ? (last.hidden ? 'Hidden' : number(last.subscribers)) : '—';
     $('count').style.fontSize = last?.hidden ? 'clamp(64px,12vw,170px)' : '';
-    $('views').textContent=last ? number(last.views) : '—';
+    renderVideo();
     $('videos').textContent=last ? number(last.videos) : '—';
     $('dataNote').textContent=config.demo ? 'Sample data · preview only' : last ? (last.hidden ? 'This channel does not share its subscriber count.' : 'Public YouTube count · rounded by YouTube') : 'Connect YouTube in Settings to see your subscribers.';
     $('scheduleLabel').textContent=config.nightEnabled && config.nightStart!==config.nightEnd ? `Night clock · ${config.nightStart}–${config.nightEnd}` : 'Night schedule off';
+  }
+  function renderVideo() {
+    $('views').textContent=config.demo?'24,810':latestVideo && !latestVideo.empty?number(latestVideo.views):'—';
+    $('videoTitle').textContent=config.demo?'Sample latest upload':videoMessage || (latestVideo?.empty?'No public videos yet':latestVideo?.title || 'Latest public upload');
+  }
+  async function fetchLatestVideo(playlistId, signal) {
+    if(!playlistId) throw new Error('Latest video unavailable');
+    async function get(resource, params) {
+      const url=new URL('https://www.googleapis.com/youtube/v3/'+resource);
+      url.search=new URLSearchParams({...params,key:config.apiKey});
+      const response=await fetch(url,{signal,cache:'no-store'});
+      const data=await response.json();
+      if(!response.ok || !Array.isArray(data.items)) throw new Error('Latest video unavailable · check API access');
+      return data;
+    }
+    const uploads=await get('playlistItems',{part:'contentDetails',playlistId,maxResults:'1'});
+    if(!uploads.items.length) return {empty:true,at:Date.now()};
+    const id=uploads.items[0].contentDetails?.videoId;
+    if(!id) throw new Error('Latest video unavailable');
+    const data=await get('videos',{part:'snippet,statistics',id});
+    const video=data.items[0], views=video?.statistics?.viewCount;
+    if(!video || views==null || !Number.isFinite(Number(views))) throw new Error('Latest video unavailable');
+    return {id:video.id,title:video.snippet.title,views:Number(views),at:Date.now()};
   }
   function renderComments() {
     $('commentsCard').hidden=!config.showComments;
@@ -88,6 +112,9 @@
   function loadCache() {
     const cached=read(cacheKey(),null);
     last=cached && typeof cached.at==='number' && Date.now()-cached.at<30*86400000 ? cached : null;
+    const cachedVideo=read(videoKey(),null);
+    latestVideo=cachedVideo && Date.now()-cachedVideo.at<30*86400000?cachedVideo:null;
+    videoMessage=latestVideo?'Saved · '+new Date(latestVideo.at).toLocaleString()+' · '+(latestVideo.title || 'No public videos'):'';
     comments=read(commentsKey(),null);
     commentsMessage='';
     render();
@@ -104,7 +131,7 @@
     const timeout=setTimeout(()=>controller?.abort(),15000);
     try {
       const url=new URL('https://www.googleapis.com/youtube/v3/channels');
-      url.search=new URLSearchParams({part:'snippet,statistics',key:config.apiKey,[config.channel.startsWith('UC')?'id':'forHandle']:config.channel});
+      url.search=new URLSearchParams({part:'snippet,statistics,contentDetails',key:config.apiKey,[config.channel.startsWith('UC')?'id':'forHandle']:config.channel});
       const response=await fetch(url,{signal:controller.signal,cache:'no-store'});
       const data=await response.json();
       if (run!==generation) return;
@@ -115,10 +142,20 @@
       const item=data.items?.[0];
       if (!item) throw new Error('Channel not found. Check the exact handle or channel ID.');
       const s=item.statistics;
-      if (!s || !Number.isFinite(Number(s.viewCount)) || !Number.isFinite(Number(s.videoCount)) || (!s.hiddenSubscriberCount && !Number.isFinite(Number(s.subscriberCount)))) throw new Error('YouTube returned incomplete statistics.');
-      last={id:item.id,title:item.snippet.title,subscribers:Number(s.subscriberCount||0),views:Number(s.viewCount),videos:Number(s.videoCount),hidden:!!s.hiddenSubscriberCount,at:Date.now()};
+      if (!s || !Number.isFinite(Number(s.videoCount)) || (!s.hiddenSubscriberCount && !Number.isFinite(Number(s.subscriberCount)))) throw new Error('YouTube returned incomplete statistics.');
+      last={id:item.id,title:item.snippet.title,subscribers:Number(s.subscriberCount||0),videos:Number(s.videoCount),hidden:!!s.hiddenSubscriberCount,at:Date.now()};
       const saved=write(cacheKey(),last);
       render(); status(refreshedLabel()+(saved?'':' · storage unavailable'),true);
+      videoMessage='Checking latest upload…';renderVideo();
+      try {
+        const result=await fetchLatestVideo(item.contentDetails?.relatedPlaylists?.uploads,controller.signal);
+        if(run!==generation) return;
+        latestVideo=result;videoMessage='';write(videoKey(),latestVideo);
+      } catch(error) {
+        if(run!==generation) return;
+        videoMessage=(latestVideo?'Saved '+new Date(latestVideo.at).toLocaleString()+' · ':'')+'Latest video unavailable';
+      }
+      renderVideo();
       if(config.showComments) {
         commentsMessage='Checking today’s comments…';renderComments();
         try {
@@ -136,6 +173,7 @@
       if (run!==generation) return;
       const message=error.name==='AbortError'?'Request timed out. Retrying later.':error instanceof TypeError?'Offline or connection blocked. Retrying later.':error.message;
       status((last?'Saved '+new Date(last.at).toLocaleString()+' · ':'')+message);
+      videoMessage=(latestVideo?'Saved '+new Date(latestVideo.at).toLocaleString()+' · ':'')+'Latest video unavailable';renderVideo();
       commentsMessage=comments?.day===dayStart()?'Saved comments · '+new Date(comments.at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'Comments unavailable · retrying later';renderComments();
     } finally {
       clearTimeout(timeout);
