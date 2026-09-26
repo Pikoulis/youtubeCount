@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090b0e">
+<meta name="description" content="HelmetCamHeroes subscriber dashboard and scheduled night clock.">
+<title>HelmetCamHeroes · Channel display</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23090b0e'/%3E%3Cpath d='M26 18L46 32L26 46Z' fill='%23ff533d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script src="config.js" defer></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<div class="shell" id="dashboard">
+<header><a class="brand" href="https://www.youtube.com/@HelmetCamHeroes" target="_blank" rel="noopener" aria-label="HelmetCamHeroes on YouTube"><span class="brand-icon" aria-hidden="true">▶</span><span id="channelName">HelmetCamHeroes</span></a><span class="eyebrow">CHANNEL DISPLAY</span></header>
+<main>
+<div class="overline"><span class="rule"></span> THE COMMUNITY</div>
+<div id="count" class="subscriber-count">—</div>
+<h1>Subscribers</h1>
+<p id="dataNote" class="muted">Connect YouTube in Settings to see your subscribers.</p>
+<section class="stats" aria-label="Channel statistics">
+<div><span class="stat-label">Total views</span><strong id="views">—</strong></div>
+<div><span class="stat-label">Videos published</span><strong id="videos">—</strong></div>
+<div id="commentsCard"><span class="stat-label" id="commentsLabel">Comments today</span><strong id="comments">—</strong><small id="commentsNote">Public comments · excluding replies</small></div>
+</section>
+</main>
+<footer><div class="status"><span id="statusDot" class="status-dot"></span><span id="status" role="status">Setup needed</span><span class="divider">/</span><time id="dayTime"></time></div><span id="scheduleLabel">Night clock · 22:00–07:00</span></footer>
+</div>
+<section id="night" class="night" aria-label="Night clock" hidden><div id="clockBlock"><div class="night-label">HELMETCAMHEROES</div><time id="nightTime">00:00</time><div id="nightDate"></div></div></section>
+<nav class="toolbar" aria-label="Display controls"><button id="modeButton" title="Switch between schedule, daytime and night clock">Mode: Auto</button><button id="fullscreenButton">Full screen</button><button id="settingsButton">Settings</button></nav>
+<div id="settingsPanel" class="modal" hidden>
+<section class="settings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1">
+<div class="settings-heading"><div><div class="overline">YOUR DISPLAY</div><h2 id="settingsTitle">Make it yours.</h2></div><button id="closeSettings" aria-label="Close settings">✕</button></div>
+<form id="settingsForm">
+<label>YouTube channel handle or ID<input name="channel" required placeholder="@HelmetCamHeroes" autocomplete="off"></label>
+<label>YouTube API key<input name="apiKey" type="password" placeholder="Paste your restricted API key" autocomplete="off" spellcheck="false"></label>
+<p class="field-note">Saved only in this browser. Use a website-restricted YouTube Data API v3 key. See README for setup.</p>
+<div class="form-row"><label>Night starts<input type="time" name="nightStart" required></label><label>Day starts<input type="time" name="nightEnd" required></label></div>
+<label class="check"><input type="checkbox" name="nightEnabled"> Switch to the clock on schedule</label>
+<label class="check"><input type="checkbox" name="hour24"> Use a 24-hour clock</label>
+<label class="check"><input type="checkbox" name="showComments"> Show today’s comments</label>
+<label class="check"><input type="checkbox" name="keepAwake"> Keep the display awake when supported</label>
+<label class="check"><input type="checkbox" name="demo"> Preview with sample numbers</label>
+<label>Refresh every (minutes)<input name="refreshMinutes" type="number" min="5" max="1440" required></label>
+<p class="field-note">Schedule uses this tablet’s local time. Equal start and end times disable the scheduled night period.</p>
+<p id="formMessage" role="status"></p><button class="primary" type="submit">Save display settings</button>
+</form>
+</section>
+</div>
+<script>/* No third-party libraries, fonts, trackers, or build tools. */</script>
+</body>
+</html>
