@@ -5,3 +5,9 @@
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 
 #videoTitle{overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}.stats>div{min-width:0}
+
+#clockBlock{filter:brightness(var(--clock-brightness,1));transition:filter 2s ease}
+@media(prefers-reduced-motion:reduce){#clockBlock{transition:none}}
+
+.red-clock #nightTime{color:#a83832}.red-clock #nightDate{color:#70302c}.red-clock .night-label{color:#582a28}
+.settings select{font:inherit;width:100%;padding:12px;min-height:46px;border:1px solid #39414c;border-radius:8px;background:#090c11;color:var(--ink)}select:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
