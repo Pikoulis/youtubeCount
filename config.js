@@ -5,6 +5,8 @@ window.DASHBOARD_CONFIG = {
   apiKey: "", // Recommended: enter the key in Settings instead of committing it.
   refreshMinutes: 15,
   nightEnabled: true,
+  nightColor: "amber", // "amber" or "red"
+  autoDim: true, // Adapt clock digits to room light during scheduled nights.
   nightStart: "22:00",
   nightEnd: "07:00",
   hour24: true,
